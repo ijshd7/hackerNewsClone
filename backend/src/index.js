@@ -7,13 +7,13 @@ const typeDefs = `
     info: String!
     feed: [Link!]!
   }
-`
 
-type Link {
-  id: ID!
-  description: String!
-  url: String!
-}
+  type Link {
+    id: ID!
+    description: String!
+    url: String!
+  }
+`
 
 // variable used to store links at runtime
 let links = [{
@@ -36,8 +36,6 @@ const resolvers = {
     url: (parent) => parent.url,
   }
 }
-
-
 
 // 3
 // schema and resolvers are passed to the server
