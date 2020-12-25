@@ -1,20 +1,5 @@
 const { ApolloServer } = require('apollo-server');
 
-// 1
-// defines GraphQL schema
-const typeDefs = `
-  type Query {
-    info: String!
-    feed: [Link!]!
-  }
-
-  type Link {
-    id: ID!
-    description: String!
-    url: String!
-  }
-`
-
 // variable used to store links at runtime
 let links = [{
   id: 'link-0',
@@ -22,25 +7,45 @@ let links = [{
   description: 'Fullstack tutorial for GraphQL'
 }]
 
-// 2
 // implementation
+//generate unique IDs for newly created Link elements
+let idCount = links.length
 const resolvers = {
   Query: {
     info: () => `This is the API of a Hackernews Clone`,
     feed: () => links,
+    link: () => links[id],
   },
-
-  Link: {
-    id: (parent) => parent.id,
-    description: (parent) => parent.description,
-    url: (parent) => parent.url,
+  Mutation: {
+    post: (parent, args) => {
+      const link = {
+        id: `link-${idCount++}`,
+        description: args.description,
+        url: args.url,
+    }
+    links.push(link)
+    return link
+    }
   }
 }
 
+  // this resolver is not needed bc graphql infers what it looks like...
+  // Link: {
+  //   id: (parent) => parent.id,
+  //   description: (parent) => parent.description,
+  //   url: (parent) => parent.url,
+  // }
+
 // 3
 // schema and resolvers are passed to the server
+const fs = require('fs');
+const path = require('path');
+
 const server = new ApolloServer({
-  typeDefs,
+  typeDefs: fs.readFileSync(
+    path.join(__dirname, 'schema.graphql'),
+    'utf8'
+  ),
   resolvers,
 })
 
