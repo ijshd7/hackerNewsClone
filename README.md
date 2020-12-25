@@ -1,2 +1,2 @@
 # hackernews clone
-# react, apollo, nodejs, graphql
+# react, apollo, nodejs, graphql, prisma
