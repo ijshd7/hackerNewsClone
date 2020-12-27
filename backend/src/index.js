@@ -1,30 +1,29 @@
-const { ApolloServer } = require('apollo-server');
+const { ApolloServer, PubSub } = require('apollo-server');
 const { PrismaClient } = require('@prisma/client');
-
-const resolvers = {
-  Query: {
-    info: () => `This is the API of a Hackernews Clone`,
-    feed: async (parent, args, context) => {
-      return context.prisma.link.findMany()
-    },
-  },
-  Mutation: {
-    post: (parent, args, context, info) => {
-      const newLink = context.prisma.link.create({
-        data: {
-          url: args.url,
-          description: args.description,
-        }
-      })
-    return newLink
-    },
-  }
-}
-
+const Query = require('./resolvers/Query');
+const Mutation = require('./resolvers/Mutation');
+const Subscription = require('./resolvers/Subscription');
+const User = require('./resolvers/User');
+const Link = require('./resolvers/Link');
+const Vote = require('./resolvers/Vote');
 const fs = require('fs');
 const path = require('path');
+const { getUserId } = require('./utils');
 
-const prisma = new PrismaClient();
+const pubsub = new PubSub();
+
+const prisma = new PrismaClient({
+  errorFormat: 'minimal'
+});
+
+const resolvers = {
+  Query,
+  Mutation,
+  Subscription,
+  User,
+  Link,
+  Vote
+};
 
 const server = new ApolloServer({
   typeDefs: fs.readFileSync(
@@ -32,10 +31,35 @@ const server = new ApolloServer({
     'utf8'
   ),
   resolvers,
-  context: {
-    prisma,
+  context: ({ req }) => {
+    return {
+      ...req,
+      prisma,
+      pubsub,
+      userId:
+        req && req.headers.authorization
+          ? getUserId(req)
+          : null
+    };
+  },
+  subscriptions: {
+    onConnect: (connectionParams) => {
+      if (connectionParams.authToken) {
+        return {
+          prisma,
+          userId: getUserId(
+            null,
+            connectionParams.authToken
+          )
+        };
+      } else {
+        return {
+          prisma
+        };
+      }
+    }
   }
-})
+});
 
 server
   .listen()
