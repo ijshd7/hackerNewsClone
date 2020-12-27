@@ -1,45 +1,30 @@
 const { ApolloServer } = require('apollo-server');
+const { PrismaClient } = require('@prisma/client');
 
-// variable used to store links at runtime
-let links = [{
-  id: 'link-0',
-  url: 'www.howtographql.com',
-  description: 'Fullstack tutorial for GraphQL'
-}]
-
-// implementation
-//generate unique IDs for newly created Link elements
-let idCount = links.length
 const resolvers = {
   Query: {
     info: () => `This is the API of a Hackernews Clone`,
-    feed: () => links,
-    link: () => links[id],
+    feed: async (parent, args, context) => {
+      return context.prisma.link.findMany()
+    },
   },
   Mutation: {
-    post: (parent, args) => {
-      const link = {
-        id: `link-${idCount++}`,
-        description: args.description,
-        url: args.url,
-    }
-    links.push(link)
-    return link
-    }
+    post: (parent, args, context, info) => {
+      const newLink = context.prisma.link.create({
+        data: {
+          url: args.url,
+          description: args.description,
+        }
+      })
+    return newLink
+    },
   }
 }
 
-  // this resolver is not needed bc graphql infers what it looks like...
-  // Link: {
-  //   id: (parent) => parent.id,
-  //   description: (parent) => parent.description,
-  //   url: (parent) => parent.url,
-  // }
-
-// 3
-// schema and resolvers are passed to the server
 const fs = require('fs');
 const path = require('path');
+
+const prisma = new PrismaClient();
 
 const server = new ApolloServer({
   typeDefs: fs.readFileSync(
@@ -47,6 +32,9 @@ const server = new ApolloServer({
     'utf8'
   ),
   resolvers,
+  context: {
+    prisma,
+  }
 })
 
 server
